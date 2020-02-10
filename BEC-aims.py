@@ -1,5 +1,5 @@
 """
- This script calculates born effective charges using finite difference.
+ This script calculates born effective charges using finite difference of polarization with displacements.
  1.The user chooses which atoms need to be dispaced 
  2.The user can choose the direction of displacement x, y or z (-c 1/2/3)
  3.The user can choose the finite difference poles (defauls between 0 and 0.0025) -d d1 d2 
