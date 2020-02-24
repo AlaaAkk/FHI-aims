@@ -1,3 +1,7 @@
+"""
+This code builds o cluster benzene on copper from bulk of six layer
+"""
+
 from ase.build import molecule
 from ase.build import fcc111, add_adsorbate
 from ase.io import read, write
