@@ -1,7 +1,3 @@
-"""
-This code builds o cluster benzene on copper from bulk of six layer
-"""
-
 from ase.build import molecule
 from ase.build import fcc111, add_adsorbate
 from ase.io import read, write
@@ -18,13 +14,13 @@ slab = fcc111('Cu', size=(3,3,6), a=3.49331674)
 slab.center(vacuum=50.0, axis=2)
 atoms = molecule('C6H6')
 atoms.write('molecule.in',format='aims')
-structure=add_adsorbate(slab, atoms, 2.69,position=(3.7051999999999996,3.5344500000000005))
+structure=add_adsorbate(slab, atoms, 2.69,position=(3.7051999999999996,3.5344500000000005)) #molceule on center
 slab.write('system.in',format='aims')#geometry is written
 
 g=atoms.get_center_of_mass(scaled=False)  #center of mass of the molecule
 print('center of mass is found : '+ str(g))
 
-#################### Slab ith metal only ##################################
+#################### Slab with metal only ##################################
 slab2 = fcc111('Cu', size=(3,3,6), a=3.49331674)
 slab2.center(vacuum=50.0, axis=2)
 slab2.write('slab.in',format='aims')#geometry is written
@@ -48,54 +44,50 @@ for line in lines:
       
           geo_mol.append(line)
     i=i+1      
-geo_mol=array(geo_mol) #adsorbed molecule  
+geo_mol=array(geo_mol) #adsorbed molecule  geometry
+
 # xx is the choosen distance from the center of mass:
-# d is the absolute distance between the atoms in the bulk 
-# and the center of mass of the molecule:
-xx=13
+xx=11.3
 
 materials=slab2.get_chemical_symbols()
 materials=materials[0]
 i=0
 geo_metal=[]
-rr=slab2.get_positions()
+rr=slab2.get_positions()  #position of metal in the slab
 
 for j in rr:
      
     dd=(j-g)
     dr=np.linalg.norm(dd)
-    print(dr) 
-    if i <9:
-   
-         #print(i)
-         #print(rr[i,:])
-         if dr < 0.75*xx:
-            new='atom',j[0] , j[1], j[2], materials
-            geo_metal.append(new)
-            
-    elif i >= 9 and i<18:
-         if dr < 0.6*xx:
-            new='atom',j[0] , j[1], j[2], materials
-            geo_metal.append(new)
-    elif i >= 18 and i<27:
-         if dr < 0.7*xx:
-            new='atom',j[0] , j[1], j[2], materials
-            geo_metal.append(new)
-    elif i >= 27 and i<36:
+    print('distance from COM for atom '+str(i)+' is: '+str(dr)) 
+    if i <9: #6th layer
          if dr < 0.8*xx:
             new='atom',j[0] , j[1], j[2], materials
             geo_metal.append(new)
-    elif i>= 36 and i<45:
+            
+    elif i >= 9 and i<18: #5th 
+         if dr < 0.82*xx:
+            new='atom',j[0] , j[1], j[2], materials
+            geo_metal.append(new)
+    elif i >= 18 and i<27: #4th
+         if dr < 0.86*xx:
+            new='atom',j[0] , j[1], j[2], materials
+            geo_metal.append(new)
+    elif i >= 27 and i<36: # 3th
+         if dr < 0.88*xx:
+            new='atom',j[0] , j[1], j[2], materials
+            geo_metal.append(new)
+    elif i>= 36 and i<45: #2nd
          if dr < 0.9*xx:
             new='atom',j[0] , j[1], j[2], materials
             geo_metal.append(new)
-    elif i>= 45 and i < 54:
-         if dr < xx:
+    elif i>= 45 and i < 54:# 1st
+         if dr < 1.1*xx:
             new='atom',j[0] , j[1], j[2], materials
             geo_metal.append(new)
     i=i+1 
 geo_metal=array(geo_metal)
-print i
+
 
 ############## Creating geomety for cluster ##########################
 with open('geometry.in', 'w') as f:
