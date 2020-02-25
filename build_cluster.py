@@ -1,6 +1,7 @@
 from ase.build import molecule
 from ase.build import fcc111, add_adsorbate
 from ase.io import read, write
+from ase.build import make_supercell
 from ase import Atoms
 from numpy import array, zeros, ones,ravel, float64, append, sqrt, arange,identity, newaxis, delete,linalg, sum
 from numpy import genfromtxt
@@ -12,18 +13,36 @@ import copy, os, shutil
 ################# Slab with metal and molecule #####################
 slab = fcc111('Cu', size=(3,3,6), a=3.49331674)
 slab.center(vacuum=50.0, axis=2)
+slab = make_supercell(slab, np.diag([3,3,1]))
+
 atoms = molecule('C6H6')
 atoms.write('molecule.in',format='aims')
-structure=add_adsorbate(slab, atoms, 2.69,position=(3.7051999999999996,3.5344500000000005)) #molceule on center
+
+
+gg=slab.get_center_of_mass(scaled=False)  #center of mass of the slab
+print(gg)
+
+
+
+
+structure=add_adsorbate(slab, atoms, 2.69,position=(gg[0],gg[1]+(1.3952479999999987))) #molecule on center
 slab.write('system.in',format='aims')#geometry is written
+
+
 
 g=atoms.get_center_of_mass(scaled=False)  #center of mass of the molecule
 print('center of mass is found : '+ str(g))
 
+
 #################### Slab with metal only ##################################
 slab2 = fcc111('Cu', size=(3,3,6), a=3.49331674)
+
+#slab2=slab2 * (3, 3, 1)
 slab2.center(vacuum=50.0, axis=2)
 slab2.write('slab.in',format='aims')#geometry is written
+#atom = read("slab.in", format='aims')
+slab2 = make_supercell(slab2, np.diag([3,3,1]))
+write("slab.in", slab2, format="aims")
 geomerty = read('slab.in', 0, 'aims')
 
 
@@ -34,70 +53,49 @@ write('system.png', slab * (3, 3, 1), rotation='10z,-80x')
 
 #Reading the molecule from the slab
 geomerty = read('system.in', 0, 'aims')
+
 molecule=open('system.in','r')
 lines=molecule.readlines()
 geo_mol=[]
 i=0
 for line in lines:
     if line.rfind('atom')!=-1:
-       if i> 43: 
-      
-          geo_mol.append(line)
-    i=i+1      
+       if line.rfind('Cu')==-1:
+           if i<12: 
+              geo_mol.append(line)
+           i=i+1      
 geo_mol=array(geo_mol) #adsorbed molecule  geometry
 
 # xx is the choosen distance from the center of mass:
-xx=11.3
+xx= 10
+
 
 materials=slab2.get_chemical_symbols()
 materials=materials[0]
 i=0
 geo_metal=[]
 rr=slab2.get_positions()  #position of metal in the slab
-
+#print(slab2.get_tags())
 for j in rr:
-     
     dd=(j-g)
     dr=np.linalg.norm(dd)
-    print('distance from COM for atom '+str(i)+' is: '+str(dr)) 
-    if i <9: #6th layer
-         if dr < 0.8*xx:
-            new='atom',j[0] , j[1], j[2], materials
-            geo_metal.append(new)
-            
-    elif i >= 9 and i<18: #5th 
-         if dr < 0.82*xx:
-            new='atom',j[0] , j[1], j[2], materials
-            geo_metal.append(new)
-    elif i >= 18 and i<27: #4th
-         if dr < 0.86*xx:
-            new='atom',j[0] , j[1], j[2], materials
-            geo_metal.append(new)
-    elif i >= 27 and i<36: # 3th
-         if dr < 0.88*xx:
-            new='atom',j[0] , j[1], j[2], materials
-            geo_metal.append(new)
-    elif i>= 36 and i<45: #2nd
-         if dr < 0.9*xx:
-            new='atom',j[0] , j[1], j[2], materials
-            geo_metal.append(new)
-    elif i>= 45 and i < 54:# 1st
-         if dr < 1.1*xx:
-            new='atom',j[0] , j[1], j[2], materials
-            geo_metal.append(new)
+#    print('distance from COM for atom '+str(i)+' is: '+str(dr))
+    if dr < xx:
+       new='atom',j[0] , j[1], j[2], materials
+       geo_metal.append(new)
     i=i+1 
 geo_metal=array(geo_metal)
 
 
 ############## Creating geomety for cluster ##########################
-with open('geometry.in', 'w') as f:
+with open('geometry.in', 'w') as f: #saving it in geometry.in file
     for item in geo_metal:
         #f.write("%s\n" % item)
         print >> f, ' '.join(item) 
     for item in geo_mol:
         f.write("%s\n" % item)
-
-
+###################Viewing the cluster using jmol#####################
+os.system('jmol geometry.in')
 
 
 
