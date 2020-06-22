@@ -49,9 +49,10 @@ from pylab import (
 )
 import copy, os, shutil
 
-from ase.io import read, write
-from ase.build import bulk
+#from ase.io import read, write
+#from ase.build import bulk
 import numpy as np
+from sklearn import preprocessing
 
 USAGE = """%prog [options] <name> 
 
@@ -167,12 +168,31 @@ def main():
     # constants
     C = 1.6021766e-19  # in coulomb
     p = array([])
-
+    p1 = array([])
+    p2 = array([])
+    p3 = array([])
+    rec_lat=zeros(shape=(3,3))
     if os.path.exists("geometry.in"):
         geometry = open("geometry.in", "r")
         geometry.close
     n_line = 0
     lines = geometry.readlines()
+    m=0
+    for l in lines:
+        if l.rfind('lattice_vector') != -1:
+            rec_lat[m] = l.split()[1:4]
+            m=m+1
+    #find the reciprocal lattice vectors
+    rec_lat= np.linalg.pinv(rec_lat).transpose()
+    print(rec_lat)
+    # Normalize the lattice vectors
+    X_normalized = preprocessing.normalize(rec_lat, norm="l2")
+    # SOlving 3 eq 3 unknowns to find linear combination
+    x = np.linalg.solve(X_normalized, np.array([1, 0, 0]))
+    y = np.linalg.solve(X_normalized, np.array([0, 1, 0]))
+    z = np.linalg.solve(X_normalized, np.array([0, 0, 1]))
+    R = np.array([x, y, z])
+
     i = 0
     for delta in deltas:
         geo = []
@@ -249,9 +269,16 @@ def main():
             template_control
             + "KS_method serial \n"
             + "output polarization    "
-            + str(c)
-            + " {} {} {}".format(n[0], n[1], n[2])
+            + str(1)
+            + " {} {} {}\n".format(n[0], n[1], n[2])
+            + "output polarization    "
+            + str(2)
+            + " {} {} {}\n".format(n[0], n[1], n[2])
+            + "output polarization    "
+            + str(3)
+            + " {} {} {}\n".format(n[0], n[1], n[2])
         )
+
         new_control.close()
         os.chdir(folder)
         # Change directoy
@@ -273,13 +300,35 @@ def main():
                 if (
                     line.rfind(
                         "- Directive    1 in direction of rec. latt. vec.  "
-                        + str(c)
+                        + '1'
                         + " yields the full polarization      :"
                     )
                     != -1
                 ):
-                    p0 = float64(split_line(line)[-2:-1])  #
-                    p = append(p, p0)
+                    p_1 = float64(split_line(line)[-2:-1])  #
+                    p1 = append(p1, p_1)
+                    #print(p1)
+                if (
+                    line.rfind(
+                        "- Directive    2 in direction of rec. latt. vec.  "
+                        + '2'
+                        + " yields the full polarization      :"
+                    )
+                    != -1
+                ):
+                    p_2 = float64(split_line(line)[-2:-1])  #
+                    p2 = append(p2, p_2)
+                if (
+                    line.rfind(
+                        "- Directive    3 in direction of rec. latt. vec.  "
+                        + '3'
+                        + " yields the full polarization      :"
+                    )
+                    != -1
+                ):
+                    p_3 = float64(split_line(line)[-2:-1])  #
+                    p3 = append(p3, p_3)
+
                 if (
                     line.rfind(
                         "Detailed listing before/after branch mapping in terms of the polarization quantum P0="
@@ -289,21 +338,26 @@ def main():
                     q0 = float64(split_line(line)[-2:-1])  # polarization quantum
 
             # Checking for same banch
-          #  if round(abs(p[i]) / abs(q0)) != 0:
-           #     p[i] = p[i] + q0
+        #  if round(abs(p[i]) / abs(q0)) != 0:
+        #     p[i] = p[i] + q0
         #   #  else:
         #        exit('Run aims inorder to proceed')
         i = i + 1
     # finding the volume of the structure using ASE:
     v = open(folder + "/" + filename)
     V = read(folder + "/" + filename, format="aims-output")
-    
-    volume=V.get_volume()
-    print("polarization for disp " + str(deltas[0]) + 'A is : ' + str(p[0]))
-    print("polarization for disp " + str(deltas[1]) + 'A is : ' + str(p[1]))
 
-    #print("dipole for dis1:") + str(volume * p[0])
-    #print("dipole for disp2 :") + str(volume * p[1])
+    P_1 = np.array([p1[0], p2[0], p3[0]])
+    P_2 = np.array([p1[1], p2[1], p3[1]])
+    delta_1 = np.dot(P_1, R)
+    delta_2 = np.dot(P_2, R)
+    p = [delta_1[c - 1], delta_2[c - 1]]
+    p = array(p)
+    print("polarization for disp " + str(deltas[0]) + "A is : " + str(p[0]))
+    print("polarization for disp " + str(deltas[1]) + "A is : " + str(p[1]))
+
+    # print("dipole for dis1:") + str(volume * p[0])
+    # print("dipole for disp2 :") + str(volume * p[1])
     # Change unit to e:
     born_factor = (volume * 1e-20) / (1 * C)
     I = (p[1] - p[0]) / abs(deltas[1] - deltas[0])  # Finite difference of polarization
