@@ -1,0 +1,47 @@
+!Using Cmake:
+
+1) git clone git@aims-git.rz-berlin.mpg.de:aims/FHIaims.git
+2) cd FHIaims; mkdir build; cd build
+3) Copy the following file into that folder
+4) cmake -C cobra_draco.cmake ..
+(Don’t forget the two dots! And use capital C)
+5) make -j 32
+
+###############
+# Basic Flags #
+###############
+set(CMAKE_Fortran_COMPILER mpiifort CACHE STRING "")
+set(CMAKE_Fortran_FLAGS "-O3 -ip -fp-model precise" CACHE STRING "")
+set(Fortran_MIN_FLAGS "-O0 -fp-model precise" CACHE STRING "")
+set(LIB_PATHS "$ENV{MKLROOT}/lib/intel64" CACHE STRING "")
+set(LIBS "mkl_intel_lp64 mkl_sequential mkl_core mkl_blacs_intelmpi_lp64 mkl_scalapack_lp64" CACHE STRING "")
+
+###############
+# C,C++ Flags #
+###############
+set(USE_CXX_FILES ON CACHE BOOL "")
+set(CMAKE_C_COMPILER icc CACHE STRING "")
+set(CMAKE_C_FLAGS "-O3 -ip -fp-model precise -std=gnu99" CACHE STRING "")
+set(CMAKE_CXX_COMPILER icpc CACHE STRING "")
+set(CMAKE_CXX_FLAGS "-O3 -ip -fp-model precise" CACHE STRING "")
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Using make: 
+save the following as make.sys:
+
+FC = ifort
+#FFLAGS = -O3 -ip -module $(MODDIR) -fp-model precise -std=gnu99
+F90FLAGS = $(FFLAGS)
+ARCHITECTURE = Generic
+USE_MPI = yes
+MPIFC = mpiifort
+LAPACKBLAS = -L${MKLROOT}/lib/intel64 \
+            -Wl,--start-group -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -Wl,--end-group -lpthread
+SCALAPACK = -L${MKLROOT}/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
+USE_C_FILES = yes
+USE_SPGLIB = yes
+
+! THEN:
+make scalapak.mpi -j 32 
+
