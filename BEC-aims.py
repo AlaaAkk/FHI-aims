@@ -184,7 +184,7 @@ def main():
             m=m+1
     #find the reciprocal lattice vectors
     rec_lat= np.linalg.pinv(rec_lat).transpose()
-    print(rec_lat)
+
     # Normalize the lattice vectors
     X_normalized = preprocessing.normalize(rec_lat, norm="l2")
     # SOlving 3 eq 3 unknowns to find linear combination
@@ -336,6 +336,8 @@ def main():
                     != -1
                 ):
                     q0 = float64(split_line(line)[-2:-1])  # polarization quantum
+                if line.rfind('| Unit cell volume ')!=-1:
+                    volume=float64(split_line(line)[-2])
 
             # Checking for same banch
         #  if round(abs(p[i]) / abs(q0)) != 0:
@@ -344,13 +346,20 @@ def main():
         #        exit('Run aims inorder to proceed')
         i = i + 1
     # finding the volume of the structure using ASE:
-    v = open(folder + "/" + filename)
-    V = read(folder + "/" + filename, format="aims-output")
+    #v = open(folder + "/" + filename)
+    #V = read(folder + "/" + filename, format="aims-output")
 
+    #volume = 107.6308461537937
+    print(volume)
+    print(p1)
+    print(p3)
+    print(p2)
     P_1 = np.array([p1[0], p2[0], p3[0]])
     P_2 = np.array([p1[1], p2[1], p3[1]])
     delta_1 = np.dot(P_1, R)
     delta_2 = np.dot(P_2, R)
+    print(delta_1) 
+    print(delta_2) 
     p = [delta_1[c - 1], delta_2[c - 1]]
     p = array(p)
     print("polarization for disp " + str(deltas[0]) + "A is : " + str(p[0]))
