@@ -268,9 +268,9 @@ will be replaced by name + counter, string
   pi=constants.pi
   hessian_factor   = eV/(at_u*Ang*Ang) 
  
-  grad_dipole_factor=(eV/(1./(10*c)))/Ang  #(eV/Ang -> D/Ang)
+  grad_dipole_factor=(eV/(1./(10*c)))/Ang  #(e -> D/Ang)
   polr_factor= 0.062415091 # C/m2 to e/A2 
-  ir_factor = 1
+  ir_factor = 1 # 
   
   # Asign all filenames
   inputgeomerty = 'geometry.in.'+name
@@ -343,6 +343,7 @@ will be replaced by name + counter, string
       struc.periodic=True
       rec_lat[m] = line.split()[1:4]
       m=m+1
+      
 
     if line.rfind('atom')!=-1:              # Set atoms
       line_vals=split_line(line)
@@ -359,7 +360,6 @@ will be replaced by name + counter, string
   n_constrained=n_atoms-sum(struc.constrained)
   print('Total number of atoms found: '+str(n_atoms))
   print('Number of atoms considered in fequency calcualtion: '+str(n_constrained))
-
   if struc.periodic:
      import numpy as np
      #find the reciprocal lattice vectors
@@ -525,7 +525,7 @@ will be replaced by name + counter, string
           data.close()
           if struc.periodic:
             pol[index,:]=pol[index,:]+pol_jump*coeff[deltas==delta]*c_zero #grad polar using finite difference
-            polr[index, :] = (polr[index, :] + polr_jump * polr_factor* coeff[deltas == delta] * c_zero)
+            polr[index, :] = (polr[index, :] + polr_jump * coeff[deltas == delta] * c_zero) #C/m2 
 
           else:
          
@@ -634,14 +634,14 @@ will be replaced by name + counter, string
     freq=sort(sign(freq)*sqrt(abs(freq)))
     ZPE=hbar*(freq)/(2.0*eV)
     freq = (freq)/(200.*pi*c)
-    
+    grad_polr= polr*volume *polr_factor* grad_dipole_factor # D/Ang 
     grad_dipole = dip * grad_dipole_factor
     eig_vec = eig_vec*mass_vector[:,newaxis]*ones(len(mass_vector))[newaxis,:]
     reduced_mass=sum(eig_vec**2,axis=0)
     if options.IR or options.IRRaman:
        if struc.periodic:
     #Calculation of Infrared
-          infrared_intensity = sum(dot(transpose(polr),eig_vec)**2,axis=0)*volume  #D^2/A^2*amu
+          infrared_intensity = sum(dot(transpose(grad_polr),eig_vec)**2,axis=0)*ir_factor  #D^2/A^2*amu
        else: 
    # norm = sqrt(reduced_mass)
           infrared_intensity = sum(dot(transpose(grad_dipole),eig_vec)**2,axis=0)*ir_factor  #D^2/A^2*amu
@@ -679,11 +679,11 @@ will be replaced by name + counter, string
     print('Results\n')
     print('List of all frequencies found:')
     if options.IR:
-           print('Mode number      Frequency [cm^(-1)]   Zero point energy [eV]   IR-intensity [D^2/Ang^2]')
+           print('Mode number      Frequency [cm^(-1)]   Zero point energy [eV]   IR-intensity [D^2/Ang^2amu]')
     elif options.Raman:
            print('Mode number      Frequency [cm^(-1)]   Zero point energy [eV]       Raman-intensity [Ang^4/amu] ')
     elif options.IRRaman:
-           print('Mode number      Frequency [cm^(-1)]   Zero point energy [eV]   IR-intensity [D^2/Ang^2]     Raman-intensity [Ang^4/amu] ')
+           print('Mode number      Frequency [cm^(-1)]   Zero point energy [eV]   IR-intensity [KM/mol]     Raman-intensity [Ang^4/amu] ')
     for i in range(len(freq)):
         if options.IR:
 
@@ -837,8 +837,8 @@ will be replaced by name + counter, string
          fig=figure(0)
          ax=fig.add_subplot(111)
          ax.plot(x,z_convolve,'r',lw=2)
-         ax.set_xlim([freq.min()-500,freq.max()+500])
-         ax.set_ylim([-0.01,ax.get_ylim()[1]])
+         ax.set_xlim([freq.min()+90,freq.max()+50])
+         ax.set_ylim([-0.008,ax.get_ylim()[1]])
          ax.set_yticks([])
          ax.set_xlabel('Frequency [1/cm]',size=20)
          ax.set_ylabel('Intensity [a.u.]',size=20)
@@ -854,8 +854,8 @@ will be replaced by name + counter, string
          fig=figure(1)
          ax=fig.add_subplot(111)
          ax.plot(x,z2_convolve,'r',lw=2)
-         ax.set_xlim([freq.min()-500,freq.max()+500])
-         ax.set_ylim([-0.01,ax.get_ylim()[1]])
+         ax.set_xlim([freq.min()+30,freq.max()+10])
+         ax.set_ylim([-0.005,ax.get_ylim()[1]])
          ax.set_yticks([])
          ax.set_xlabel('Frequency [1/cm]',size=20)
          ax.set_ylabel('Intensity [a.u.]',size=20)
