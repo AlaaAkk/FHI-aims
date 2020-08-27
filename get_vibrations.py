@@ -355,6 +355,8 @@ will be replaced by name + counter, string
         else:
             at=Atom(line_vals[-1],line_vals[1:-1])
       struc.join(at)
+    if line.rfind('atom_frac')!=-1:              # Set atoms
+      parser.error("Use atom not atom_frac")
   geometry.close()  
   n_atoms= struc.n()
   n_constrained=n_atoms-sum(struc.constrained)
@@ -398,6 +400,8 @@ will be replaced by name + counter, string
   
   if mode=='2' and  options.IR and struc.periodic and not options.grid:
       parser.error("Need to determine the intergration grid -n nx ny nz")
+  if mode=='2' and options.IRRaman and struc.periodic and not options.grid:
+      parser.error("Need to determine the intergration grid -n nx ny nz")
   # Set up / Read folders for displaced atoms
   for atom in arange(n_atoms)[struc.constrained==False]:
     for coord in arange(3):
@@ -420,19 +424,37 @@ will be replaced by name + counter, string
           new_control=open(folder+'/control.in','w')
           template_control=template_control.replace('relax_geometry','#relax_geometry')
           if struc.periodic:
-            new_control.write(template_control+'compute_forces .true. \n'+'final_forces_cleaned '+'.true. \n'+'DFPT dielectric\n'+  "KS_method serial \n"
-                            + "output polarization    "
-                            + str(1)
-                            + " {} {} {}\n".format(n[0], n[1], n[2])
-                            + "output polarization    "
-                            + str(2)
-                            + " {} {} {}\n".format(n[0], n[1], n[2])
-                            + "output polarization    "
-                            + str(3)
-                            + " {} {} {}\n".format(n[0], n[1], n[2])
-)
+             if  options.IRRaman:
+                new_control.write(template_control+'compute_forces .true. \n'+'final_forces_cleaned '+'.true. \n'+'DFPT dielectric\n'+  "KS_method serial \n"
+                                + "output polarization    "
+                                + str(1)
+                                + " {} {} {}\n".format(n[0], n[1], n[2])
+                                + "output polarization    "
+                                + str(2)
+                                + " {} {} {}\n".format(n[0], n[1], n[2])
+                                + "output polarization    "
+                                + str(3)
+                                + " {} {} {}\n".format(n[0], n[1], n[2]))
+             elif options.IR:
+                new_control.write(template_control+'compute_forces .true. \n'+'final_forces_cleaned '+'.true. \n'+ "KS_method serial \n"
+                                + "output polarization    "
+                                + str(1)
+                                + " {} {} {}\n".format(n[0], n[1], n[2])
+                                + "output polarization    "
+                                + str(2)
+                                + " {} {} {}\n".format(n[0], n[1], n[2])
+                                + "output polarization    "
+                                + str(3)
+                                + " {} {} {}\n".format(n[0], n[1], n[2]))
+             elif options.Raman:
+                new_control.write(template_control+'compute_forces .true. \n'+'final_forces_cleaned '+'.true. \n'+'DFPT dielectric\n'+  "KS_method serial \n")
           else:
-            new_control.write(template_control+'compute_forces .true. \n'+'final_forces_cleaned '+'.true. \n'+'output dipole \n'+'DFPT polarizability\n')
+             if  options.IRRaman:
+                 new_control.write(template_control+'compute_forces .true. \n'+'final_forces_cleaned '+'.true. \n'+'output dipole \n'+'DFPT polarizability\n')
+             elif options.IR:
+                 new_control.write(template_control+'compute_forces .true. \n'+'final_forces_cleaned '+'.true. \n'+'output dipole \n')
+             elif options.Raman:
+                 new_control.write(template_control+'DFPT polarizability\n')
           new_control.close()
           os.chdir(folder)                                   # Change directoy
           print('Processing atom: '+str(atom+1)+'/'+str(n_atoms)+', coord.: '+str(coord+1)+'/'+str(3)+', delta: '+str(delta))
@@ -634,13 +656,14 @@ will be replaced by name + counter, string
     freq=sort(sign(freq)*sqrt(abs(freq)))
     ZPE=hbar*(freq)/(2.0*eV)
     freq = (freq)/(200.*pi*c)
-    grad_polr= polr*volume *polr_factor* grad_dipole_factor # D/Ang 
     grad_dipole = dip * grad_dipole_factor
     eig_vec = eig_vec*mass_vector[:,newaxis]*ones(len(mass_vector))[newaxis,:]
     reduced_mass=sum(eig_vec**2,axis=0)
     if options.IR or options.IRRaman:
        if struc.periodic:
     #Calculation of Infrared
+
+          grad_polr= polr*volume *polr_factor* grad_dipole_factor # D/Ang 
           infrared_intensity = sum(dot(transpose(grad_polr),eig_vec)**2,axis=0)*ir_factor  #D^2/A^2*amu
        else: 
    # norm = sqrt(reduced_mass)
@@ -683,7 +706,7 @@ will be replaced by name + counter, string
     elif options.Raman:
            print('Mode number      Frequency [cm^(-1)]   Zero point energy [eV]       Raman-intensity [Ang^4/amu] ')
     elif options.IRRaman:
-           print('Mode number      Frequency [cm^(-1)]   Zero point energy [eV]   IR-intensity [KM/mol]     Raman-intensity [Ang^4/amu] ')
+           print('Mode number      Frequency [cm^(-1)]   Zero point energy [eV]   IR-intensity [D^2/A^2*amu]     Raman-intensity [Ang^4/amu] ')
     for i in range(len(freq)):
         if options.IR:
 
