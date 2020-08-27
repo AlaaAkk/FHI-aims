@@ -299,6 +299,13 @@ def main():
             for line in liness:
                 if (
                     line.rfind(
+                        "Detailed listing before/after branch mapping in terms of the polarization quantum P0="
+                    )
+                    != -1
+                ):
+                    q0 = float64(split_line(line)[-2:-1])  # polarization quantum
+                if (
+                    line.rfind(
                         "- Directive    1 in direction of rec. latt. vec.  "
                         + '1'
                         + " yields the full polarization      :"
@@ -306,8 +313,9 @@ def main():
                     != -1
                 ):
                     p_1 = float64(split_line(line)[-2:-1])  #
+                    if round(abs(p_1) / abs(q0)) != 0:
+                       p_1 = p_1 - q0
                     p1 = append(p1, p_1)
-                    #print(p1)
                 if (
                     line.rfind(
                         "- Directive    2 in direction of rec. latt. vec.  "
@@ -317,6 +325,8 @@ def main():
                     != -1
                 ):
                     p_2 = float64(split_line(line)[-2:-1])  #
+                    if round(abs(p_2) / abs(q0)) != 0:
+                       p_2 = p_2 - q0
                     p2 = append(p2, p_2)
                 if (
                     line.rfind(
@@ -327,46 +337,22 @@ def main():
                     != -1
                 ):
                     p_3 = float64(split_line(line)[-2:-1])  #
+                    if round(abs(p_3) / abs(q0)) != 0:
+                       p_3 = p_3 - q0
                     p3 = append(p3, p_3)
-
-                if (
-                    line.rfind(
-                        "Detailed listing before/after branch mapping in terms of the polarization quantum P0="
-                    )
-                    != -1
-                ):
-                    q0 = float64(split_line(line)[-2:-1])  # polarization quantum
                 if line.rfind('| Unit cell volume ')!=-1:
                     volume=float64(split_line(line)[-2])
 
-            # Checking for same banch
-        #  if round(abs(p[i]) / abs(q0)) != 0:
-        #     p[i] = p[i] + q0
-        #   #  else:
-        #        exit('Run aims inorder to proceed')
-        i = i + 1
-    # finding the volume of the structure using ASE:
-    #v = open(folder + "/" + filename)
-    #V = read(folder + "/" + filename, format="aims-output")
 
-    #volume = 107.6308461537937
-    print(volume)
-    print(p1)
-    print(p3)
-    print(p2)
     P_1 = np.array([p1[0], p2[0], p3[0]])
     P_2 = np.array([p1[1], p2[1], p3[1]])
     delta_1 = np.dot(P_1, R)
     delta_2 = np.dot(P_2, R)
-    print(delta_1) 
-    print(delta_2) 
     p = [delta_1[c - 1], delta_2[c - 1]]
     p = array(p)
-    print("polarization for disp " + str(deltas[0]) + "A is : " + str(p[0]))
-    print("polarization for disp " + str(deltas[1]) + "A is : " + str(p[1]))
+    print("polarization for disp " + str(deltas[0]) + " AA is : " + str(p[0]))
+    print("polarization for disp " + str(deltas[1]) + " AA is : " + str(p[1]))
 
-    # print("dipole for dis1:") + str(volume * p[0])
-    # print("dipole for disp2 :") + str(volume * p[1])
     # Change unit to e:
     born_factor = (volume * 1e-20) / (1 * C)
     I = (p[1] - p[0]) / abs(deltas[1] - deltas[0])  # Finite difference of polarization
