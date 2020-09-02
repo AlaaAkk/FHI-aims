@@ -454,7 +454,7 @@ will be replaced by name + counter, string
              elif options.IR:
                  new_control.write(template_control+'compute_forces .true. \n'+'final_forces_cleaned '+'.true. \n'+'output dipole \n')
              elif options.Raman:
-                 new_control.write(template_control+'DFPT polarizability\n')
+                 new_control.write(template_control+'compute_forces .true. \n'+'final_forces_cleaned '+'.true. \n'+'DFPT polarizability\n')
           new_control.close()
           os.chdir(folder)                                   # Change directoy
           print('Processing atom: '+str(atom+1)+'/'+str(n_atoms)+', coord.: '+str(coord+1)+'/'+str(3)+', delta: '+str(delta))
