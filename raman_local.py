@@ -352,7 +352,7 @@ def main():
         if not os.path.exists(folder2): os.mkdir(folder2)
         with open(folder2+'/geometry.in','w+') as f2:
              for item in lattice:
-                f.write("%s\n" % item)
+                f2.write("%s\n" % item)
              for item in slab:
                 f2.write("%s\n" % item)
                # print >> f2, ' '.join(item)
@@ -360,6 +360,7 @@ def main():
           #sys.stdout.write(str(item))
                 print >> f2, ' '.join(item)
           
+        f2.close    
   
         new_control=open(folder2+'/control.in','w')
         new_control.write(template_control+'DFPT local_polarizability '+ '{} {} {} '.format(scanxyz[col][0], scanxyz[col][1], scanxyz[col][2])+'1.3 1.3 5 1 1\n'+'DFPT_sc_accuracy_dm 0.001\n')
