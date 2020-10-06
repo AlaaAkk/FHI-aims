@@ -455,6 +455,7 @@ will be replaced by name + counter, string
                  new_control.write(template_control+'compute_forces .true. \n'+'final_forces_cleaned '+'.true. \n'+'output dipole \n')
              elif options.Raman:
                  new_control.write(template_control+'compute_forces .true. \n'+'final_forces_cleaned '+'.true. \n'+'DFPT polarizability\n')
+
           new_control.close()
           os.chdir(folder)                                   # Change directoy
           print('Processing atom: '+str(atom+1)+'/'+str(n_atoms)+', coord.: '+str(coord+1)+'/'+str(3)+', delta: '+str(delta))
@@ -492,51 +493,18 @@ will be replaced by name + counter, string
         if mode=='1' or mode=='2':   # Read output 
           forces_reached=False
           atom_count=0
-          p_1=0
-          p_2=0
-          p_3=0
-          #p1 = array([])
-          #p2 = array([])
-          #p3 = array([])
           data=open(folder+'/'+filename)
           for line in data.readlines():
             
             if line.rfind('Polarizability')!=-1:
-                pol_jump = float64(split_line(line)[-6:]) # Periodic
+                pol_jump = float64(split_line(line)[-6:]) # Periodic/cluster
             if line.rfind('| Total dipole moment [eAng]')!=-1:
                 dip_jump = float64(split_line(line)[-3:]) #Cluster
             if line.rfind('| Unit cell volume ')!=-1:
                 volume=float64(split_line(line)[-2])
             #if line.rfind("output polarization ") != -1:
-            if line.rfind("- Directive    1 in direction of rec. latt. vec.  1 yields the full polarization      : ")!= -1:
-               
-                   p_1 = float64(split_line(line)[-2:-1])  #
-                   polr_jump=[p_1,p_2,p_3] 
-                   polr_jump = np.dot(polr_jump, R) # transform to cartesian
-            if (
-                line.rfind(
-                    "- Directive    2 in direction of rec. latt. vec.  "
-                    + "2"
-                    + " yields the full polarization      :"
-                )
-                != -1
-            ):
-                p_2 = float64(split_line(line)[-2:-1])  #
-                
-                polr_jump=[p_1,p_2,p_3]  
-                polr_jump = np.dot(polr_jump, R) # transform to cartesian
-                #p2 = append(p2, p_2)
-            if (
-                line.rfind(
-                    "- Directive    3 in direction of rec. latt. vec.  "
-                    + "3"
-                    + " yields the full polarization      :"
-                )
-                != -1
-            ):
-                p_3 = float64(split_line(line)[-2:-1])  #
-                polr_jump=[p_1,p_2,p_3]  
-                polr_jump = np.dot(polr_jump, R) # transform to cartesian
+            if line.rfind("Cartesian Polarization")!= -1:
+                polr_jump = float64(split_line(line)[-3:]) # Periodic
             if forces_reached and atom_count<n_atoms: #Read Forces
               struc.atoms[atom_count].force=float64(split_line(line)[2:])
               atom_count=atom_count+1
@@ -695,7 +663,7 @@ will be replaced by name + counter, string
        beta=(alphasxx-alphasyy)**2+(alphasxx-alphaszz)**2+(alphasyy-alphaszz)**2+6*((alphasxy)**2+(alphasxz)**2+(alphasyz)**2)
     #Raman Scattering Intensity:
        raman_intensity=45*(alpha**2)+(7./2)*(beta)
-       raman_intensity=raman_intensity*0.078415972  #bohr^4 to ang^4
+       raman_intensity=raman_intensity*0.02195865620442408 #bohr^6/ang^2 to ang^4
 
 
     # The rest is output, xyz, IR,...
